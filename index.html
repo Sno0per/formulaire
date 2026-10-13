@@ -161,6 +161,7 @@
 <section>
   <div class="label">Marchés <small>plusieurs choix</small></div>
   <div class="chips" data-field="markets">
+    <button class="chip" data-value="__all" id="markets-all">Tous (hors buteur)</button>
     <button class="chip" data-value="1n2">1N2</button>
     <button class="chip" data-value="dc">Double chance</button>
     <button class="chip" data-value="ou">Buts +/-</button>
@@ -230,6 +231,9 @@
     if (t === "") return null;
     return /^\d+(\.\d+)?$/.test(t) ? Number(t) : NaN;
   };
+  const allMarkets = () => [...document.querySelectorAll('[data-field="markets"] .chip')]
+    .filter((b) => b.dataset.value !== "__all" && b.dataset.value !== "buteur" && !b.disabled)
+    .map((b) => b.dataset.value);
   const press = (container, values) => {
     container.querySelectorAll(".chip").forEach((b) =>
       b.setAttribute("aria-pressed", values.has(b.dataset.value) ? "true" : "false"));
@@ -243,7 +247,13 @@
       const btn = e.target.closest(".chip");
       if (!btn || btn.disabled) return;
       const v = btn.dataset.value;
-      if (single) {
+      if (field === "markets" && v === "__all") {
+        // Raccourci : tous les marchés disponibles sauf le buteur (pas de proba juste), ou aucun s'ils l'étaient déjà
+        const all = allMarkets();
+        const every = all.every((m) => state.markets.has(m));
+        state.markets.clear();
+        if (!every) all.forEach((m) => state.markets.add(m));
+      } else if (single) {
         state[field] = v;
       } else {
         const set = state[field];
@@ -379,7 +389,8 @@
     $("combo-fields").hidden = !combo;
     $("odds-min-label").textContent = combo ? "Cote mini par sélection" : "Cote mini";
     document.querySelectorAll('[data-field="markets"] .chip').forEach((b) => {
-      b.disabled = (state.bk === "betclic" && !BETCLIC_MARKETS.has(b.dataset.value))
+      if (b.dataset.value === "__all") return;
+      b.disabled =(state.bk === "betclic" && !BETCLIC_MARKETS.has(b.dataset.value))
         || (combo && COMBO_EXCLUDED_MARKETS.has(b.dataset.value));
       if (b.disabled) state.markets.delete(b.dataset.value);
     });
@@ -387,6 +398,8 @@
       const v = state[g.dataset.field];
       press(g, v instanceof Set ? v : new Set(v ? [v] : []));
     });
+    const all = allMarkets();
+    $("markets-all").setAttribute("aria-pressed", all.length && all.every((m) => state.markets.has(m)) ? "true" : "false");
 
     const { payload, errors } = build();
     const show = (id, key) => { $(id).textContent = touched ? (errors[key] || "") : ""; };
