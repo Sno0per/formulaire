@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Nouvelle offre</title>
+<!-- Formulaire de saisie d'offre (Mini App Telegram). Page statique, sans secret. -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: var(--tg-theme-bg-color, #ffffff);
+    --bg2: var(--tg-theme-secondary-bg-color, #f2f3f5);
+    --text: var(--tg-theme-text-color, #16181d);
+    --hint: var(--tg-theme-hint-color, #6b7280);
+    --accent: var(--tg-theme-button-color, #2481cc);
+    --accent-text: var(--tg-theme-button-text-color, #ffffff);
+    --danger: var(--tg-theme-destructive-text-color, #d93025);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-tg]) {
+      --bg: #17191d; --bg2: #23262c; --text: #eceef2; --hint: #9aa1ad; --accent: #4ea4f6; --accent-text: #0b1220;
+      --danger: #ff6b5e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 12px 16px 96px; background: var(--bg); color: var(--text);
+    font: 15px/1.4 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+  }
+  h1 { font-size: 18px; margin: 4px 0 12px; }
+  section { background: var(--bg2); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+  section[hidden] { display: none; }
+  .label { font-weight: 600; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 8px; }
+  .label small { font-weight: 400; color: var(--hint); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    border: 1px solid color-mix(in srgb, var(--hint) 45%, transparent); background: var(--bg); color: var(--text);
+    border-radius: 999px; padding: 7px 12px; font: inherit; cursor: pointer;
+  }
+  .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .chip:disabled { opacity: .35; cursor: not-allowed; }
+  .row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+  input[type="text"], input[type="datetime-local"] {
+    width: 100%; padding: 9px 10px; border-radius: 8px; font: inherit; color: var(--text); background: var(--bg);
+    border: 1px solid color-mix(in srgb, var(--hint) 45%, transparent);
+  }
+  .err { color: var(--danger); font-size: 13px; margin-top: 6px; min-height: 0; }
+  .err:empty { display: none; }
+  #summary { color: var(--hint); font-size: 13px; white-space: pre-line; }
+  #fallback { display: none; width: 100%; padding: 12px; border: 0; border-radius: 10px; font: inherit;
+              background: var(--accent); color: var(--accent-text); }
+  #fallback:disabled { opacity: .4; }
+  pre { white-space: pre-wrap; word-break: break-all; font-size: 12px; color: var(--hint); }
+</style>
+</head>
+<body>
+<h1>📝 Nouvelle offre</h1>
+
+<section>
+  <div class="label">Bookmaker</div>
+  <div class="chips" data-field="bk" data-single>
+    <button class="chip" data-value="winamax">Winamax</button>
+    <button class="chip" data-value="betclic">Betclic</button>
+    <button class="chip" data-value="unibet">Unibet</button>
+    <button class="chip" data-value="pmu">PMU</button>
+  </div>
+  <div class="err" id="err-bk"></div>
+</section>
+
+<section>
+  <div class="label">Récompense</div>
+  <div class="chips" data-field="reward_type" data-single>
+    <button class="chip" data-value="fb">Freebet</button>
+    <button class="chip" data-value="cash">Cash</button>
+  </div>
+  <div class="label" style="margin-top:10px">Condition</div>
+  <div class="chips" data-field="cond" data-single>
+    <button class="chip" data-value="perdant">Si perdant</button>
+    <button class="chip" data-value="gagnant">Si gagnant</button>
+    <button class="chip" data-value="toujours">Toujours</button>
+  </div>
+  <div class="err" id="err-reward"></div>
+</section>
+
+<section>
+  <div class="label">Mise mini <small>€</small></div>
+  <div class="chips" data-preset="stake_min">
+    <button class="chip" data-value="5">5</button><button class="chip" data-value="10">10</button>
+    <button class="chip" data-value="20">20</button><button class="chip" data-value="50">50</button>
+    <button class="chip" data-value="100">100</button>
+  </div>
+  <div class="row"><input type="text" inputmode="decimal" id="stake_min" placeholder="Autre montant"></div>
+  <div class="err" id="err-stake_min"></div>
+</section>
+
+<section id="sec-cap" hidden>
+  <div class="label">Plafond du remboursement <small>€</small></div>
+  <div class="chips" data-preset="cap">
+    <button class="chip" data-value="=stake">= mise</button>
+    <button class="chip" data-value="10">10</button><button class="chip" data-value="20">20</button>
+    <button class="chip" data-value="50">50</button><button class="chip" data-value="100">100</button>
+    <button class="chip" data-value="">Aucun</button>
+  </div>
+  <div class="row"><input type="text" inputmode="decimal" id="cap" placeholder="Aucun plafond"></div>
+  <div class="err" id="err-cap"></div>
+</section>
+
+<section>
+  <div class="label">Montant de la récompense</div>
+  <div class="chips" data-field="reward_mode" data-single>
+    <button class="chip" data-value="stake">= mise</button>
+    <button class="chip" data-value="cap" id="rm-cap">= plafond</button>
+    <button class="chip" data-value="fixed">Montant fixe</button>
+  </div>
+  <div class="row" id="row-reward-amount" hidden>
+    <input type="text" inputmode="decimal" id="reward_amount" placeholder="Montant (€)">
+  </div>
+  <div class="err" id="err-reward_amount"></div>
+</section>
+
+<section>
+  <div class="label">Cote mini</div>
+  <div class="chips" data-preset="odds_min">
+    <button class="chip" data-value="1.20">1.20</button><button class="chip" data-value="1.50">1.50</button>
+    <button class="chip" data-value="1.80">1.80</button><button class="chip" data-value="2.00">2.00</button>
+    <button class="chip" data-value="2.50">2.50</button><button class="chip" data-value="3.00">3.00</button>
+  </div>
+  <div class="row"><input type="text" inputmode="decimal" id="odds_min" placeholder="Autre cote"></div>
+  <div class="label" style="margin-top:10px">Cote max <small>facultative</small></div>
+  <div class="chips" data-preset="odds_max">
+    <button class="chip" data-value="">Aucune</button><button class="chip" data-value="3">3</button>
+    <button class="chip" data-value="5">5</button><button class="chip" data-value="10">10</button>
+  </div>
+  <div class="row"><input type="text" inputmode="decimal" id="odds_max" placeholder="Aucune"></div>
+  <div class="err" id="err-odds"></div>
+</section>
+
+<section>
+  <div class="label">Marchés <small>plusieurs choix</small></div>
+  <div class="chips" data-field="markets">
+    <button class="chip" data-value="1n2">1N2</button>
+    <button class="chip" data-value="dc">Double chance</button>
+    <button class="chip" data-value="ou">Buts +/-</button>
+    <button class="chip" data-value="btts">Les 2 marquent</button>
+    <button class="chip" data-value="qualif">Qualification</button>
+    <button class="chip" data-value="buteur">Buteur</button>
+  </div>
+  <div class="err" id="err-markets"></div>
+</section>
+
+<section>
+  <div class="label">Compétitions <small>plusieurs choix</small></div>
+  <div class="chips" data-field="comps">
+    <button class="chip" data-value="all">Tout le foot</button>
+    <button class="chip" data-value="ligue1">Ligue 1</button>
+    <button class="chip" data-value="ligue2">Ligue 2</button>
+    <button class="chip" data-value="epl">Premier League</button>
+    <button class="chip" data-value="liga">Liga</button>
+    <button class="chip" data-value="seriea">Serie A</button>
+    <button class="chip" data-value="bundesliga">Bundesliga</button>
+    <button class="chip" data-value="ucl">Ligue des Champions</button>
+    <button class="chip" data-value="uel">Ligue Europa</button>
+    <button class="chip" data-value="uecl">Conférence</button>
+  </div>
+  <div class="err" id="err-comps"></div>
+</section>
+
+<section>
+  <div class="label">Fin de l'offre</div>
+  <div class="chips" data-end>
+    <button class="chip" data-days="0">Ce soir 23:59</button>
+    <button class="chip" data-days="1">Demain 23:59</button>
+    <button class="chip" data-days="sunday">Dimanche 23:59</button>
+  </div>
+  <div class="row"><input type="datetime-local" id="end"></div>
+  <div class="err" id="err-end"></div>
+</section>
+
+<section>
+  <div class="label">Récapitulatif</div>
+  <div id="summary">Formulaire incomplet.</div>
+</section>
+
+<button id="fallback">Envoyer l'offre</button>
+<pre id="debug"></pre>
+
+<script>
+(() => {
+  const tg = window.Telegram && window.Telegram.WebApp;
+  const inTelegram = !!(tg && tg.initData);
+  if (inTelegram) {
+    document.documentElement.setAttribute("data-tg", "");
+    tg.ready();
+    tg.expand();
+  }
+
+  const state = { bk: null, reward_type: null, cond: null, reward_mode: null, markets: new Set(), comps: new Set() };
+  const $ = (id) => document.getElementById(id);
+  const BETCLIC_MARKETS = new Set(["1n2"]);
+
+  const num = (s) => {
+    const t = String(s || "").trim().replace(",", ".");
+    if (t === "") return null;
+    return /^\d+(\.\d+)?$/.test(t) ? Number(t) : NaN;
+  };
+  const press = (container, values) => {
+    container.querySelectorAll(".chip").forEach((b) =>
+      b.setAttribute("aria-pressed", values.has(b.dataset.value) ? "true" : "false"));
+  };
+
+  // Choix uniques / multiples
+  document.querySelectorAll("[data-field]").forEach((group) => {
+    const field = group.dataset.field;
+    const single = group.hasAttribute("data-single");
+    group.addEventListener("click", (e) => {
+      const btn = e.target.closest(".chip");
+      if (!btn || btn.disabled) return;
+      const v = btn.dataset.value;
+      if (single) {
+        state[field] = v;
+      } else {
+        const set = state[field];
+        if (set.has(v)) set.delete(v); else set.add(v);
+        if (field === "comps" && v === "all" && set.has("all")) { set.clear(); set.add("all"); }
+        if (field === "comps" && v !== "all") set.delete("all");
+      }
+      changed();
+    });
+  });
+
+  // Préréglages des champs numériques
+  document.querySelectorAll("[data-preset]").forEach((group) => {
+    const input = $(group.dataset.preset);
+    group.addEventListener("click", (e) => {
+      const btn = e.target.closest(".chip");
+      if (!btn) return;
+      input.value = btn.dataset.value === "=stake" ? $("stake_min").value : btn.dataset.value;
+      changed();
+    });
+  });
+  ["stake_min", "cap", "reward_amount", "odds_min", "odds_max", "end"].forEach((id) =>
+    $(id).addEventListener("input", changed));
+
+  // Raccourcis de date de fin (heure locale du téléphone)
+  const pad = (n) => String(n).padStart(2, "0");
+  const toLocalInput = (d) =>
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  document.querySelector("[data-end]").addEventListener("click", (e) => {
+    const btn = e.target.closest(".chip");
+    if (!btn) return;
+    const d = new Date();
+    const days = btn.dataset.days === "sunday" ? (7 - d.getDay()) % 7 : Number(btn.dataset.days);
+    d.setDate(d.getDate() + days);
+    d.setHours(23, 59, 0, 0);
+    $("end").value = toLocalInput(d);
+    changed();
+  });
+
+  function build() {
+    const errors = {};
+    const payload = { v: 1 };
+    if (!state.bk) errors.bk = "Choisir un bookmaker.";
+    payload.bk = state.bk;
+    if (!state.reward_type || !state.cond) errors.reward = "Choisir la récompense et la condition.";
+    payload.reward_type = state.reward_type;
+    payload.cond = state.cond;
+
+    const stake = num($("stake_min").value);
+    if (!(stake > 0)) errors.stake_min = "Mise mini > 0 attendue.";
+    payload.stake_min = stake;
+
+    const capAllowed = state.cond === "perdant";
+    let cap = capAllowed ? num($("cap").value) : null;
+    if (capAllowed && cap !== null && !(cap > 0)) errors.cap = "Plafond > 0 attendu (ou Aucun).";
+    else if (capAllowed && cap !== null && stake > 0 && cap < stake) errors.cap = "Le plafond doit être ≥ la mise mini.";
+    payload.cap = Number.isFinite(cap) ? cap : null;
+
+    let mode = state.reward_mode;
+    if (mode === "cap" && payload.cap === null) {
+      mode = null;
+      errors.reward_amount = "Aucun plafond : choisir « = mise » ou un montant fixe.";
+    } else if (!mode) errors.reward_amount = "Choisir le montant de la récompense.";
+    if (mode === "stake") { payload.reward_mode = "stake"; payload.reward_amount = null; }
+    else if (mode === "cap") { payload.reward_mode = "fixed"; payload.reward_amount = payload.cap; }
+    else if (mode === "fixed") {
+      const amount = num($("reward_amount").value);
+      if (!(amount > 0)) errors.reward_amount = "Montant de la récompense > 0 attendu.";
+      payload.reward_mode = "fixed"; payload.reward_amount = amount;
+    }
+
+    const oMin = num($("odds_min").value);
+    const oMax = num($("odds_max").value);
+    if (!(oMin > 1)) errors.odds = "Cote mini > 1 attendue.";
+    else if (oMax !== null && !(oMax > oMin)) errors.odds = "La cote max doit dépasser la cote mini.";
+    payload.odds_min = oMin;
+    payload.odds_max = oMax;
+
+    const markets = [...state.markets].filter((m) => state.bk !== "betclic" || BETCLIC_MARKETS.has(m));
+    if (!markets.length) errors.markets = state.bk === "betclic"
+      ? "Betclic : seul le 1N2 est disponible." : "Choisir au moins un marché.";
+    payload.markets = markets;
+
+    const comps = [...state.comps];
+    if (!comps.length) errors.comps = "Choisir au moins une compétition.";
+    payload.comps = comps;
+
+    const endValue = $("end").value;
+    const end = endValue ? new Date(endValue) : null;
+    if (!end || isNaN(end.getTime())) errors.end = "Choisir la date de fin.";
+    else if (end <= new Date()) errors.end = "La date de fin est passée.";
+    payload.end = end && !isNaN(end.getTime()) ? end.toISOString() : null;
+
+    return { payload, errors };
+  }
+
+  function summaryText(p) {
+    const bk = { winamax: "Winamax", betclic: "Betclic", unibet: "Unibet", pmu: "PMU" }[p.bk];
+    const cond = { perdant: "si perdant", gagnant: "si gagnant", toujours: "dans tous les cas" }[p.cond];
+    const reward = p.reward_mode === "stake" ? "= mise" + (p.cap !== null ? ` (max ${p.cap} €)` : "") : `${p.reward_amount} €`;
+    return `${bk} · ${p.reward_type === "fb" ? "Freebet" : "Cash"} ${cond}\n`
+      + `Mise ${p.stake_min} €${p.cap !== null ? `, plafond ${p.cap} €` : ""} · récompense ${reward}\n`
+      + `Cote ≥ ${p.odds_min}${p.odds_max !== null ? ` et ≤ ${p.odds_max}` : ""}\n`
+      + `Fin : ${new Date(p.end).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })}`;
+  }
+
+  let touched = false;  // erreurs affichées seulement après une première saisie
+  function changed() { touched = true; update(); }
+  function update() {
+    // Dépendances d'affichage
+    $("sec-cap").hidden = state.cond !== "perdant";
+    $("rm-cap").disabled = state.cond !== "perdant";
+    if (state.cond !== "perdant" && state.reward_mode === "cap") state.reward_mode = null;
+    $("row-reward-amount").hidden = state.reward_mode !== "fixed";
+    document.querySelectorAll('[data-field="markets"] .chip').forEach((b) => {
+      b.disabled = state.bk === "betclic" && !BETCLIC_MARKETS.has(b.dataset.value);
+      if (b.disabled) state.markets.delete(b.dataset.value);
+    });
+    document.querySelectorAll("[data-field]").forEach((g) => {
+      const v = state[g.dataset.field];
+      press(g, v instanceof Set ? v : new Set(v ? [v] : []));
+    });
+
+    const { payload, errors } = build();
+    const show = (id, key) => { $(id).textContent = touched ? (errors[key] || "") : ""; };
+    show("err-bk", "bk"); show("err-reward", "reward"); show("err-stake_min", "stake_min"); show("err-cap", "cap");
+    show("err-reward_amount", "reward_amount"); show("err-odds", "odds"); show("err-markets", "markets");
+    show("err-comps", "comps"); show("err-end", "end");
+
+    const valid = Object.keys(errors).length === 0;
+    $("summary").textContent = valid ? summaryText(payload) : "Formulaire incomplet.";
+    if (inTelegram) {
+      tg.MainButton.setText("Envoyer l'offre");
+      tg.MainButton.show();
+      valid ? tg.MainButton.enable() : tg.MainButton.disable();
+    } else {
+      $("fallback").style.display = "block";
+      $("fallback").disabled = !valid;
+    }
+    return valid ? payload : null;
+  }
+
+  function submit() {
+    touched = true;
+    const payload = update();
+    if (!payload) return;
+    const data = JSON.stringify(payload);
+    if (inTelegram) {
+      tg.sendData(data);  // ferme la Mini App ; le bot répondra au prochain run
+    } else {
+      console.log("sendData (simulation hors Telegram) :", data);
+      $("debug").textContent = "Simulation hors Telegram — données envoyées :\n" + data;
+    }
+  }
+
+  if (inTelegram) tg.MainButton.onClick(submit);
+  $("fallback").addEventListener("click", submit);
+  update();
+})();
+</script>
+</body>
+</html>
