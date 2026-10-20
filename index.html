@@ -68,6 +68,16 @@
 </section>
 
 <section>
+  <div class="label">Sport <small>plusieurs choix</small></div>
+  <div class="chips" data-field="sports">
+    <button class="chip" data-value="soccer">⚽ Foot</button>
+    <button class="chip" data-value="basketball">🏀 Basket</button>
+    <button class="chip" data-value="tennis">🎾 Tennis</button>
+  </div>
+  <div class="err" id="err-sports"></div>
+</section>
+
+<section>
   <div class="label">Type de pari</div>
   <div class="chips" data-field="bet" data-single>
     <button class="chip" data-value="simple">Simple</button>
@@ -162,29 +172,45 @@
   <div class="label">Marchés <small>plusieurs choix</small></div>
   <div class="chips" data-field="markets">
     <button class="chip" data-value="__all" id="markets-all">Tous (hors buteur)</button>
-    <button class="chip" data-value="1n2">1N2</button>
-    <button class="chip" data-value="dc">Double chance</button>
-    <button class="chip" data-value="ou">Buts +/-</button>
-    <button class="chip" data-value="btts">Les 2 marquent</button>
-    <button class="chip" data-value="qualif">Qualification</button>
-    <button class="chip" data-value="buteur">Buteur</button>
+    <button class="chip" data-value="1n2" data-sports="soccer">1N2</button>
+    <button class="chip" data-value="dc" data-sports="soccer">Double chance</button>
+    <button class="chip" data-value="ou" data-sports="soccer">Buts +/-</button>
+    <button class="chip" data-value="btts" data-sports="soccer">Les 2 marquent</button>
+    <button class="chip" data-value="qualif" data-sports="soccer">Qualification</button>
+    <button class="chip" data-value="buteur" data-sports="soccer">Buteur</button>
+    <button class="chip" data-value="vainqueur" data-sports="basketball tennis">Vainqueur</button>
+    <button class="chip" data-value="hcap" data-sports="basketball tennis">Handicap</button>
+    <button class="chip" data-value="pts_ou" data-sports="basketball">Points +/-</button>
+    <button class="chip" data-value="jeux_ou" data-sports="tennis">Jeux +/-</button>
   </div>
   <div class="err" id="err-markets"></div>
 </section>
 
 <section>
   <div class="label">Compétitions <small>plusieurs choix</small></div>
+  <!-- data-group : groupe d'un sport, exclusif des autres compétitions de ce sport (aligné avec promo_offers.py) -->
   <div class="chips" data-field="comps">
-    <button class="chip" data-value="all">Tout le foot</button>
-    <button class="chip" data-value="ligue1">Ligue 1</button>
-    <button class="chip" data-value="ligue2">Ligue 2</button>
-    <button class="chip" data-value="epl">Premier League</button>
-    <button class="chip" data-value="liga">Liga</button>
-    <button class="chip" data-value="seriea">Serie A</button>
-    <button class="chip" data-value="bundesliga">Bundesliga</button>
-    <button class="chip" data-value="ucl">Ligue des Champions</button>
-    <button class="chip" data-value="uel">Ligue Europa</button>
-    <button class="chip" data-value="uecl">Conférence</button>
+    <button class="chip" data-value="all" data-sport="soccer" data-group>Tout le foot</button>
+    <button class="chip" data-value="ucl" data-sport="soccer">Ligue des Champions</button>
+    <button class="chip" data-value="uel" data-sport="soccer">Ligue Europa</button>
+    <button class="chip" data-value="uecl" data-sport="soccer">Conférence</button>
+    <button class="chip" data-value="ligue1" data-sport="soccer">Ligue 1</button>
+    <button class="chip" data-value="ligue2" data-sport="soccer">Ligue 2</button>
+    <button class="chip" data-value="cdf" data-sport="soccer">Coupe de France</button>
+    <button class="chip" data-value="epl" data-sport="soccer">Premier League</button>
+    <button class="chip" data-value="eflcup" data-sport="soccer">EFL Cup</button>
+    <button class="chip" data-value="liga" data-sport="soccer">Liga</button>
+    <button class="chip" data-value="ligapt" data-sport="soccer">Liga Portugal</button>
+    <button class="chip" data-value="seriea" data-sport="soccer">Serie A</button>
+    <button class="chip" data-value="serieb" data-sport="soccer">Serie B</button>
+    <button class="chip" data-value="bundesliga" data-sport="soccer">Bundesliga</button>
+    <button class="chip" data-value="uenl" data-sport="soccer">Ligue des Nations</button>
+    <button class="chip" data-value="basket" data-sport="basketball" data-group>Tout le basket</button>
+    <button class="chip" data-value="nba" data-sport="basketball">NBA</button>
+    <button class="chip" data-value="euroleague" data-sport="basketball">Euroleague</button>
+    <button class="chip" data-value="tennis" data-sport="tennis" data-group>Tout le tennis</button>
+    <button class="chip" data-value="atp" data-sport="tennis">ATP</button>
+    <button class="chip" data-value="wta" data-sport="tennis">WTA</button>
   </div>
   <div class="err" id="err-comps"></div>
 </section>
@@ -221,10 +247,15 @@
   }
 
   const state = { bk: null, bet: "simple", legs_min: null, reward_type: null, cond: null, reward_mode: null,
-                  markets: new Set(), comps: new Set() };
+                  sports: new Set(["soccer"]), markets: new Set(), comps: new Set() };
   const $ = (id) => document.getElementById(id);
-  const BETCLIC_MARKETS = new Set(["1n2"]);
-  const COMBO_EXCLUDED_MARKETS = new Set(["buteur"]);  // pas de proba juste : aligné avec promo_offers.py
+  // Alignés avec promo_offers.py (BETCLIC_FAMILIES, SPORT_LABELS, buteur exclu des combinés)
+  const BETCLIC_MARKETS = new Set(["1n2", "vainqueur"]);
+  const COMBO_EXCLUDED_MARKETS = new Set(["buteur"]);  // pas de proba juste
+  const SPORT_LABELS = { soccer: "Foot", basketball: "Basket", tennis: "Tennis" };
+  const compChips = () => [...document.querySelectorAll('[data-field="comps"] .chip')];
+  const marketChips = () => [...document.querySelectorAll('[data-field="markets"] .chip')]
+    .filter((b) => b.dataset.value !== "__all");
 
   const num = (s) => {
     const t = String(s || "").trim().replace(",", ".");
@@ -255,11 +286,16 @@
         if (!every) all.forEach((m) => state.markets.add(m));
       } else if (single) {
         state[field] = v;
+      } else if (field === "comps" && !state.comps.has(v)) {
+        // Un groupe ("Tout le basket"...) remplace les compétitions de son sport, et inversement
+        const sport = btn.dataset.sport;
+        const group = btn.hasAttribute("data-group");
+        compChips().filter((b) => b.dataset.sport === sport && (group || b.hasAttribute("data-group")))
+          .forEach((b) => state.comps.delete(b.dataset.value));
+        state.comps.add(v);
       } else {
         const set = state[field];
         if (set.has(v)) set.delete(v); else set.add(v);
-        if (field === "comps" && v === "all" && set.has("all")) { set.clear(); set.add("all"); }
-        if (field === "comps" && v !== "all") set.delete("all");
       }
       changed();
     });
@@ -345,14 +381,21 @@
       payload.combo_odds_min = Number.isFinite(total) ? total : null;
     }
 
+    // Marchés et compétitions : au moins un de chaque pour chaque sport choisi
+    const sports = [...state.sports];
+    if (!sports.length) errors.sports = "Choisir au moins un sport.";
     const markets = [...state.markets].filter((m) =>
       (state.bk !== "betclic" || BETCLIC_MARKETS.has(m)) && !(combo && COMBO_EXCLUDED_MARKETS.has(m)));
-    if (!markets.length) errors.markets = state.bk === "betclic"
-      ? "Betclic : seul le 1N2 est disponible." : "Choisir au moins un marché (Buteur exclu en combiné).";
+    const sportsOf = (b) => b.dataset.sports.split(" ");
+    const noMarket = sports.filter((s) => !marketChips().some((b) => markets.includes(b.dataset.value) && sportsOf(b).includes(s)));
+    if (noMarket.length) errors.markets = state.bk === "betclic"
+      ? `Betclic : seuls 1N2 et Vainqueur sont disponibles (${noMarket.map((s) => SPORT_LABELS[s]).join(", ")}).`
+      : `Choisir un marché : ${noMarket.map((s) => SPORT_LABELS[s]).join(", ")} (Buteur exclu en combiné).`;
     payload.markets = markets;
 
     const comps = [...state.comps];
-    if (!comps.length) errors.comps = "Choisir au moins une compétition.";
+    const noComp = sports.filter((s) => !compChips().some((b) => comps.includes(b.dataset.value) && b.dataset.sport === s));
+    if (noComp.length) errors.comps = `Choisir une compétition : ${noComp.map((s) => SPORT_LABELS[s]).join(", ")}.`;
     payload.comps = comps;
 
     const endValue = $("end").value;
@@ -368,7 +411,8 @@
     const bk = { winamax: "Winamax", betclic: "Betclic", unibet: "Unibet", pmu: "PMU" }[p.bk];
     const cond = { perdant: "si perdant", gagnant: "si gagnant", toujours: "dans tous les cas" }[p.cond];
     const reward = p.reward_mode === "stake" ? "= mise" + (p.cap !== null ? ` (max ${p.cap} €)` : "") : `${p.reward_amount} €`;
-    return `${bk} · ${p.reward_type === "fb" ? "Freebet" : "Cash"} ${cond}\n`
+    const sports = [...state.sports].map((s) => SPORT_LABELS[s]).join(", ");
+    return `${bk} · ${p.reward_type === "fb" ? "Freebet" : "Cash"} ${cond} · ${sports}\n`
       + `Mise ${p.stake_min} €${p.cap !== null ? `, plafond ${p.cap} €` : ""} · récompense ${reward}\n`
       + (p.bet === "combo"
           ? `Combiné ≥ ${p.legs_min} sélections, cote ≥ ${p.odds_min}${p.odds_max !== null ? ` et ≤ ${p.odds_max}` : ""}`
@@ -388,11 +432,16 @@
     const combo = state.bet === "combo";
     $("combo-fields").hidden = !combo;
     $("odds-min-label").textContent = combo ? "Cote mini par sélection" : "Cote mini";
-    document.querySelectorAll('[data-field="markets"] .chip').forEach((b) => {
-      if (b.dataset.value === "__all") return;
-      b.disabled =(state.bk === "betclic" && !BETCLIC_MARKETS.has(b.dataset.value))
+    // Marchés et compétitions affichés selon les sports choisis (un sport retiré emporte ses choix)
+    marketChips().forEach((b) => {
+      b.hidden = !b.dataset.sports.split(" ").some((s) => state.sports.has(s));
+      b.disabled = b.hidden || (state.bk === "betclic" && !BETCLIC_MARKETS.has(b.dataset.value))
         || (combo && COMBO_EXCLUDED_MARKETS.has(b.dataset.value));
       if (b.disabled) state.markets.delete(b.dataset.value);
+    });
+    compChips().forEach((b) => {
+      b.hidden = !state.sports.has(b.dataset.sport);
+      if (b.hidden) state.comps.delete(b.dataset.value);
     });
     document.querySelectorAll("[data-field]").forEach((g) => {
       const v = state[g.dataset.field];
@@ -403,7 +452,7 @@
 
     const { payload, errors } = build();
     const show = (id, key) => { $(id).textContent = touched ? (errors[key] || "") : ""; };
-    show("err-bk", "bk"); show("err-bet", "bet"); show("err-reward", "reward"); show("err-stake_min", "stake_min"); show("err-cap", "cap");
+    show("err-bk", "bk"); show("err-sports", "sports"); show("err-bet", "bet"); show("err-reward", "reward"); show("err-stake_min", "stake_min"); show("err-cap", "cap");
     show("err-reward_amount", "reward_amount"); show("err-odds", "odds"); show("err-markets", "markets");
     show("err-comps", "comps"); show("err-end", "end");
 
