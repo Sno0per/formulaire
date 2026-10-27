@@ -101,6 +101,23 @@
 </section>
 
 <section>
+  <div class="label" id="odds-min-label">Cote mini</div>
+  <div class="chips" data-preset="odds_min">
+    <button class="chip" data-value="1.20">1.20</button><button class="chip" data-value="1.50">1.50</button>
+    <button class="chip" data-value="1.80">1.80</button><button class="chip" data-value="2.00">2.00</button>
+    <button class="chip" data-value="2.50">2.50</button><button class="chip" data-value="3.00">3.00</button>
+  </div>
+  <div class="row"><input type="text" inputmode="decimal" id="odds_min" placeholder="Autre cote"></div>
+  <div class="label" style="margin-top:10px">Cote max <small>facultative</small></div>
+  <div class="chips" data-preset="odds_max">
+    <button class="chip" data-value="">Aucune</button><button class="chip" data-value="3">3</button>
+    <button class="chip" data-value="5">5</button><button class="chip" data-value="10">10</button>
+  </div>
+  <div class="row"><input type="text" inputmode="decimal" id="odds_max" placeholder="Aucune"></div>
+  <div class="err" id="err-odds"></div>
+</section>
+
+<section>
   <div class="label">Récompense</div>
   <div class="chips" data-field="reward_type" data-single>
     <button class="chip" data-value="fb">Freebet</button>
@@ -149,23 +166,6 @@
     <input type="text" inputmode="decimal" id="reward_amount" placeholder="Montant (€)">
   </div>
   <div class="err" id="err-reward_amount"></div>
-</section>
-
-<section>
-  <div class="label" id="odds-min-label">Cote mini</div>
-  <div class="chips" data-preset="odds_min">
-    <button class="chip" data-value="1.20">1.20</button><button class="chip" data-value="1.50">1.50</button>
-    <button class="chip" data-value="1.80">1.80</button><button class="chip" data-value="2.00">2.00</button>
-    <button class="chip" data-value="2.50">2.50</button><button class="chip" data-value="3.00">3.00</button>
-  </div>
-  <div class="row"><input type="text" inputmode="decimal" id="odds_min" placeholder="Autre cote"></div>
-  <div class="label" style="margin-top:10px">Cote max <small>facultative</small></div>
-  <div class="chips" data-preset="odds_max">
-    <button class="chip" data-value="">Aucune</button><button class="chip" data-value="3">3</button>
-    <button class="chip" data-value="5">5</button><button class="chip" data-value="10">10</button>
-  </div>
-  <div class="row"><input type="text" inputmode="decimal" id="odds_max" placeholder="Aucune"></div>
-  <div class="err" id="err-odds"></div>
 </section>
 
 <section>
